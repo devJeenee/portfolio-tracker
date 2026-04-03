@@ -234,6 +234,8 @@ Anthropic API 키는 [console.anthropic.com](https://console.anthropic.com/)에�
 
 ## 기술 스택
 
+> 분석 **대상**은 Java/Kotlin Spring Boot이고, 이 MCP 서버 **자체**는 아래 기술로 만들어져 있습니다.
+
 - TypeScript (ES2022)
 - [MCP SDK](https://github.com/modelcontextprotocol/sdk) — Claude Code 연동
 - [simple-git](https://github.com/steveukx/git-js) — Git 히스토리 분석
