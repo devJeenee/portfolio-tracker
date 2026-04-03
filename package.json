@@ -1,0 +1,46 @@
+{
+  "name": "portfolio-tracker",
+  "version": "0.1.0",
+  "description": "Java/Kotlin Spring Boot 프로젝트의 포트폴리오 가치를 분석하는 MCP 서버",
+  "type": "module",
+  "bin": {
+    "portfolio-tracker": "./dist/index.js"
+  },
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsup --watch",
+    "typecheck": "tsc --noEmit",
+    "start": "node dist/index.js"
+  },
+  "keywords": [
+    "mcp",
+    "portfolio",
+    "code-analysis",
+    "claude-code"
+  ],
+  "license": "MIT",
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.78.0",
+    "@modelcontextprotocol/sdk": "^1.12.0",
+    "simple-git": "^3.27.0",
+    "ts-morph": "^25.0.0",
+    "zod": "^3.24.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "tsup": "^8.0.0",
+    "typescript": "^5.6.0"
+  }
+}
