@@ -203,20 +203,23 @@ API 문서 누락, DB 마이그레이션 누락, CORS 설정 누락, Rate Limiti
 
 단, `generate_report` 도구의 LLM 기반 서술문 생성 기능만 선택적으로 Anthropic API 키를 사용합니다. 키가 없어도 에러 없이 데이터만 반환됩니다.
 
+LLM 서술문을 원할 경우, 2단계에서 생성한 `.mcp.json`의 `env`에 키를 추가하면 됩니다:
+
 ```json
-// .mcp.json (선택 — LLM 서술문을 원할 경우만)
 {
   "mcpServers": {
     "portfolio-tracker": {
       "command": "node",
       "args": ["/path/to/portfolio-tracker/dist/index.js"],
       "env": {
-        "ANTHROPIC_API_KEY": "sk-ant-..."
+        "ANTHROPIC_API_KEY": "sk-ant-api03-..."
       }
     }
   }
 }
 ```
+
+Anthropic API 키는 [console.anthropic.com](https://console.anthropic.com/)에서 발급받을 수 있습니다.
 
 ---
 
