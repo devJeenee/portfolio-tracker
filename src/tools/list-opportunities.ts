@@ -8,11 +8,13 @@ import type { CodeAnalysis, GitAnalysis } from '../types/analysis.js';
 export const listOpportunitiesSchema = z.object({
   path: z.string().optional().describe('Project root path (defaults to cwd)'),
   minValue: z.number().optional().default(0).describe('Minimum portfolio value (1-10)'),
+  limit: z.number().optional().default(50).describe('Maximum number of results'),
 });
 
 export async function handleListOpportunities(args: z.infer<typeof listOpportunitiesSchema>) {
   const projectPath = args.path ?? process.cwd();
   const minValue = args.minValue ?? 0;
+  const limit = args.limit ?? 50;
 
   const [codeResult, gitResult, projectInfo] = await Promise.all([
     handleAnalyzeCode({ path: projectPath }),
@@ -29,7 +31,7 @@ export async function handleListOpportunities(args: z.infer<typeof listOpportuni
     projectInfo.stats,
   );
 
-  const filtered = ranked.filter(o => o.portfolioValue >= minValue);
+  const filtered = ranked.filter(o => o.portfolioValue >= minValue).slice(0, limit);
 
   return {
     content: [

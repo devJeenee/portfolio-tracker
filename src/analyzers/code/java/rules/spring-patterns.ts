@@ -1,6 +1,7 @@
 import type { CodeOpportunity } from '../../../../types/analysis.js';
 import type { JavaProjectContext } from '../../base-analyzer.js';
 import type { SpringConventions } from '../../../../config/conventions.js';
+import { getLineNumber } from '../../../../utils/line-number.js';
 
 export function analyzeSpringPatterns(
   filePath: string,
@@ -53,10 +54,14 @@ function detectFatController(
 
     const severity = score >= 5 ? 'high' : 'medium';
 
+    const classMatch = content.match(/class\s+\w+/);
+    const classLine = classMatch ? getLineNumber(content, classMatch.index!) : undefined;
+
     opportunities.push({
       type: 'fat-controller',
       severity,
       file: filePath,
+      line: classLine,
       current: `Controller에 비즈니스 로직이 과도합니다: ${reasons.join(', ')}`,
       suggestion: 'Service 계층으로 비즈니스 로직을 분리하세요. Controller는 요청/응답 처리만 담당해야 합니다',
       portfolioValue: 9,

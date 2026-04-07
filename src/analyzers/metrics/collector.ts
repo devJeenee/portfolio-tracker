@@ -3,6 +3,7 @@ import { join } from 'path';
 import type { ProjectInfo, ProjectStats, ProjectPeriod } from '../../types/index.js';
 import { simpleGit } from 'simple-git';
 import { glob } from './glob-helper.js';
+import { batchProcess } from '../../utils/batch.js';
 
 export async function collectProjectInfo(projectPath: string): Promise<ProjectInfo> {
   const [techStack, languages] = await detectTechStack(projectPath);
@@ -77,31 +78,41 @@ async function collectStats(projectPath: string, languages: string[]): Promise<P
 
   const allFiles = await glob(projectPath);
 
-  for (const file of allFiles) {
-    files++;
+  const fileStats = await batchProcess(allFiles, async (file) => {
+    const result = { lines: 0, isComponent: false, isHook: false, isTest: false };
 
     if (/\.(test|spec)\.(ts|tsx|js|jsx|java)$/.test(file)) {
-      testFiles++;
+      result.isTest = true;
     }
 
     try {
       const content = await readFile(file, 'utf-8');
-      lines += content.split('\n').length;
+      result.lines = content.split('\n').length;
 
       if (file.endsWith('.tsx')) {
         if (/export\s+(default\s+)?function\s+[A-Z]/.test(content) ||
             /export\s+const\s+[A-Z]\w+\s*[:=]/.test(content)) {
-          components++;
+          result.isComponent = true;
         }
       }
 
       if (/^(export\s+)?function\s+use[A-Z]/.test(content) ||
           /^(export\s+)?const\s+use[A-Z]\w+\s*=/.test(content)) {
-        hooks++;
+        result.isHook = true;
       }
     } catch {
       // Skip unreadable files
     }
+
+    return result;
+  }, 20);
+
+  for (const s of fileStats) {
+    files++;
+    lines += s.lines;
+    if (s.isTest) testFiles++;
+    if (s.isComponent) components++;
+    if (s.isHook) hooks++;
   }
 
   return { files, components, hooks, lines, testFiles };
@@ -110,12 +121,16 @@ async function collectStats(projectPath: string, languages: string[]): Promise<P
 async function collectPeriod(projectPath: string): Promise<ProjectPeriod> {
   try {
     const git = simpleGit(projectPath);
-    const log = await git.log();
+    const [latest, oldest, countRaw] = await Promise.all([
+      git.log(['--max-count=1']),
+      git.log(['--max-count=1', '--reverse']),
+      git.raw(['rev-list', '--count', 'HEAD']),
+    ]);
 
     return {
-      firstCommit: log.all.length > 0 ? log.all[log.all.length - 1].date : 'N/A',
-      lastCommit: log.all.length > 0 ? log.all[0].date : 'N/A',
-      totalCommits: log.total,
+      firstCommit: oldest.all.length > 0 ? oldest.all[0].date : 'N/A',
+      lastCommit: latest.all.length > 0 ? latest.all[0].date : 'N/A',
+      totalCommits: parseInt(countRaw.trim(), 10) || 0,
     };
   } catch {
     return { firstCommit: 'N/A', lastCommit: 'N/A', totalCommits: 0 };

@@ -14,7 +14,9 @@ export function detectChurn(commits: Commit[], threshold = 3): ChurnResult[] {
     for (const file of commit.files) {
       const existing = fileChanges.get(file) ?? { count: 0, commitHashes: [] };
       existing.count++;
-      existing.commitHashes.push(commit.hash);
+      if (existing.commitHashes.length < 50) {
+        existing.commitHashes.push(commit.hash);
+      }
       fileChanges.set(file, existing);
     }
   }
@@ -51,10 +53,12 @@ export function detectConvergence(commits: Commit[]): Array<{
   for (const commit of commits) {
     for (const file of commit.files) {
       const history = fileHistory.get(file) ?? [];
-      history.push({
-        diff: commit.insertions + commit.deletions,
-        date: commit.date,
-      });
+      if (history.length < 100) {
+        history.push({
+          diff: commit.insertions + commit.deletions,
+          date: commit.date,
+        });
+      }
       fileHistory.set(file, history);
     }
   }

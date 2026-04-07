@@ -4,6 +4,7 @@ import type { Commit } from '../types/index.js';
 import type { GitAnalysis } from '../types/analysis.js';
 import { buildStories } from '../analyzers/git/story-builder.js';
 import { detectChurn } from '../analyzers/git/churn-detector.js';
+import { batchProcess } from '../utils/batch.js';
 
 export const analyzeGitSchema = z.object({
   path: z.string().optional().describe('Project root path (defaults to cwd)'),
@@ -18,12 +19,14 @@ export async function handleAnalyzeGit(args: z.infer<typeof analyzeGitSchema>) {
   const log = await git.log([
     '--no-merges',
     '--stat',
+    '--max-count=500',
     ...(args.since ? [`--since=${args.since}`] : []),
     ...(args.until ? [`--until=${args.until}`] : []),
   ]);
 
-  const commits: Commit[] = await Promise.all(
-    log.all.map(async (entry) => {
+  const commits: Commit[] = await batchProcess(
+    [...log.all],
+    async (entry) => {
       let files: string[] = [];
       let insertions = 0;
       let deletions = 0;
@@ -46,7 +49,8 @@ export async function handleAnalyzeGit(args: z.infer<typeof analyzeGitSchema>) {
         insertions,
         deletions,
       };
-    }),
+    },
+    10,
   );
 
   const stories = buildStories(commits);

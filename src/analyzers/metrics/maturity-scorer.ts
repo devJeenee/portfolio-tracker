@@ -80,6 +80,7 @@ const CATEGORY_MAP: Record<string, { nameKo: string; types: Set<string>; weight:
     types: new Set([
       'raw-exception', 'no-dto', 'missing-validation', 'missing-transactional',
       'controller-transaction', 'error-handling',
+      'field-injection', 'sysout-usage', 'long-method', 'value-overuse',
     ]),
   },
   production: {

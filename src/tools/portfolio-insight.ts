@@ -10,6 +10,7 @@ import { mineExperiences } from '../analyzers/git/experience-miner.js';
 import { detectStrengths } from '../analyzers/code/java/strength-detector.js';
 import { detectArchitecture } from '../analyzers/code/java/architecture-detector.js';
 import type { JavaProjectContext } from '../analyzers/code/base-analyzer.js';
+import { batchProcess } from '../utils/batch.js';
 
 export const portfolioInsightSchema = z.object({
   path: z.string().optional().describe('Project root path (defaults to cwd)'),
@@ -44,16 +45,19 @@ export async function handlePortfolioInsight(args: z.infer<typeof portfolioInsig
     );
 
       const fileContents = new Map<string, string>();
-      for (const fp of javaFiles) {
+      const fileResults = await batchProcess(javaFiles, async (fp) => {
         try {
           const content = await readFile(fp, 'utf-8');
-          fileContents.set(fp, content);
-        } catch { /* skip */ }
+          return { fp, content };
+        } catch { return null; }
+      }, 20);
+      for (const r of fileResults) {
+        if (r) fileContents.set(r.fp, r.content);
       }
 
       // Build minimal project context for strength detection
       const projectCtx = buildQuickContext(fileContents, conventions);
-      const strengths = detectStrengths(projectCtx, conventions, fileContents);
+      const strengths = detectStrengths(projectCtx, conventions, fileContents, files);
       result.strengths = strengths;
   }
 
@@ -64,16 +68,18 @@ export async function handlePortfolioInsight(args: z.infer<typeof portfolioInsig
       const log = await git.log([
         '--no-merges',
         '--stat',
+        '--max-count=200',
         ...(args.since ? [`--since=${args.since}`] : ['--since=2023-01-01']),
       ]);
 
-      const commits: Commit[] = await Promise.all(
-        log.all.slice(0, 200).map(async (entry) => {
+      const commits: Commit[] = await batchProcess(
+        [...log.all],
+        async (entry) => {
           let commitFiles: string[] = [];
           let insertions = 0;
           let deletions = 0;
           try {
-            const diff = await simpleGit(projectPath).diffSummary([`${entry.hash}~1`, entry.hash]);
+            const diff = await git.diffSummary([`${entry.hash}~1`, entry.hash]);
             commitFiles = diff.files.map(f => f.file);
             insertions = diff.insertions;
             deletions = diff.deletions;
@@ -88,7 +94,8 @@ export async function handlePortfolioInsight(args: z.infer<typeof portfolioInsig
             insertions,
             deletions,
           };
-        }),
+        },
+        10,
       );
 
       const experiences = mineExperiences(commits);
@@ -139,6 +146,13 @@ function buildQuickContext(
     testFileMap: new Map(),
     architecture: { detected: 'unknown', confidence: 'low', layers: [] },
     packageStructure: new Map(),
+    hasEnableAsync: false,
+    hasAsyncConfigurer: false,
+    asyncMethods: new Map(),
+    hasSchedulingConfig: false,
+    scheduledMethodCount: 0,
+    hasAsyncExceptionHandler: false,
+    isReactiveProject: false,
   };
 
   for (const [filePath, content] of fileContents) {

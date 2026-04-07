@@ -36,4 +36,12 @@ export interface JavaProjectContext {
   testFileMap: Map<string, string>;
   architecture: ArchitectureInfo;
   packageStructure: Map<string, string[]>;
+  // Async context
+  hasEnableAsync: boolean;
+  hasAsyncConfigurer: boolean;
+  asyncMethods: Map<string, string[]>;
+  hasSchedulingConfig: boolean;
+  scheduledMethodCount: number;
+  hasAsyncExceptionHandler: boolean;
+  isReactiveProject: boolean;
 }

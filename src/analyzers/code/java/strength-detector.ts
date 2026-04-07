@@ -13,24 +13,29 @@ export function detectStrengths(
   context: JavaProjectContext,
   conventions: SpringConventions,
   fileContents: Map<string, string>,
+  allFiles: string[] = [],
 ): ProjectStrength[] {
   const strengths: ProjectStrength[] = [];
 
-  detectArchitectureStrengths(context, strengths);
+  detectArchitectureStrengths(context, fileContents, strengths);
   detectTestingStrengths(context, strengths);
   detectSecurityStrengths(context, fileContents, strengths);
   detectPatternStrengths(context, fileContents, strengths);
-  detectInfraStrengths(fileContents, strengths);
+  detectInfraStrengths(fileContents, allFiles, strengths);
 
   return strengths.sort((a, b) => b.portfolioValue - a.portfolioValue);
 }
 
 function detectArchitectureStrengths(
   context: JavaProjectContext,
+  fileContents: Map<string, string>,
   strengths: ProjectStrength[],
 ): void {
   // Proper layered architecture
-  const hasControllers = context.serviceClasses.length > 0;
+  let hasControllers = false;
+  for (const [, content] of fileContents) {
+    if (/@(?:Rest)?Controller\b/.test(content)) { hasControllers = true; break; }
+  }
   const hasServices = context.serviceClasses.length > 0;
   const hasRepositories = context.repositoryInterfaces.length > 0;
   const hasEntities = context.entityClasses.length > 0;
@@ -211,6 +216,7 @@ function detectPatternStrengths(
 
 function detectInfraStrengths(
   fileContents: Map<string, string>,
+  allFiles: string[],
   strengths: ProjectStrength[],
 ): void {
   let hasFlyway = false;
@@ -218,9 +224,14 @@ function detectInfraStrengths(
   let hasActuator = false;
   let hasMetrics = false;
 
-  for (const [filePath, content] of fileContents) {
-    if (/flyway|liquibase/.test(content) || /V\d+__/.test(filePath)) hasFlyway = true;
+  // Check file paths from allFiles for Docker/Flyway (not limited to java/kt)
+  for (const filePath of allFiles) {
     if (/Dockerfile|docker-compose/.test(filePath)) hasDocker = true;
+    if (/V\d+__/.test(filePath)) hasFlyway = true;
+  }
+
+  for (const [, content] of fileContents) {
+    if (/flyway|liquibase/.test(content)) hasFlyway = true;
     if (/actuator|HealthIndicator/.test(content)) hasActuator = true;
     if (/@Timed|MeterRegistry|Micrometer/.test(content)) hasMetrics = true;
   }

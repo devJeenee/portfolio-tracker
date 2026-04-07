@@ -1,6 +1,7 @@
 import type { CodeOpportunity } from '../../../../types/analysis.js';
 import type { JavaProjectContext } from '../../base-analyzer.js';
 import type { SpringConventions } from '../../../../config/conventions.js';
+import { getLineNumber } from '../../../../utils/line-number.js';
 
 export function analyzeSecurityPatterns(
   filePath: string,
@@ -33,10 +34,14 @@ function detectHardcodedSecrets(
   ];
 
   let totalMatches = 0;
+  let firstLine: number | undefined;
   for (const pattern of secretPatterns) {
-    const matches = content.match(pattern);
-    if (matches) {
-      totalMatches += matches.length;
+    let match: RegExpExecArray | null;
+    while ((match = pattern.exec(content)) !== null) {
+      totalMatches++;
+      if (firstLine === undefined) {
+        firstLine = getLineNumber(content, match.index);
+      }
     }
   }
 
@@ -45,6 +50,7 @@ function detectHardcodedSecrets(
       type: 'hardcoded-secret',
       severity: 'high',
       file: filePath,
+      line: firstLine,
       current: `하드코딩된 시크릿이 ${totalMatches}개 감지되었습니다`,
       suggestion: 'application.yml의 환경 변수(${ENV_VAR}) 또는 Vault/AWS Secrets Manager를 사용하세요',
       portfolioValue: 9,
@@ -65,10 +71,14 @@ function detectSqlInjection(
   ];
 
   let totalMatches = 0;
+  let firstLine: number | undefined;
   for (const pattern of sqlConcatPatterns) {
-    const matches = content.match(pattern);
-    if (matches) {
-      totalMatches += matches.length;
+    let match: RegExpExecArray | null;
+    while ((match = pattern.exec(content)) !== null) {
+      totalMatches++;
+      if (firstLine === undefined) {
+        firstLine = getLineNumber(content, match.index);
+      }
     }
   }
 
@@ -77,6 +87,7 @@ function detectSqlInjection(
       type: 'sql-injection',
       severity: 'high',
       file: filePath,
+      line: firstLine,
       current: `SQL 문자열 결합이 ${totalMatches}개 감지되었습니다 (SQL Injection 위험)`,
       suggestion: 'JPA Named Parameter(:param), @Query의 ?1, 또는 PreparedStatement를 사용하세요',
       portfolioValue: 9,

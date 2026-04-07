@@ -146,7 +146,7 @@ const MINING_PATTERNS: MiningPattern[] = [
     category: '리팩토링',
     title: '코드 구조 개선 / 리팩토링',
     commitPatterns: [/refactor|리팩토링|restructur|clean.*up|extract.*class|분리/i],
-    filePatterns: [/\.(java|kt)$/],
+    filePatterns: [/(?:Refactor|Restructur|Clean|Simplif)\w*\.(java|kt)$/i],
     narrative: '기존 코드의 구조를 개선하여 가독성과 유지보수성을 높이고, SOLID 원칙을 준수하도록 리팩토링했습니다.',
     impact: 'medium',
   },
@@ -161,9 +161,8 @@ export function mineExperiences(commits: Commit[]): ExperienceMined[] {
 
     for (const commit of commits) {
       const messageMatch = pattern.commitPatterns.some(p => p.test(commit.message));
-      const fileMatch = commit.files.some(f => pattern.filePatterns.some(p => p.test(f)));
 
-      if (messageMatch || fileMatch) {
+      if (messageMatch) {
         matchingCommits.push(commit);
       }
     }

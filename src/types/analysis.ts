@@ -72,6 +72,23 @@ export type OpportunityType =
   | 'mutable-singleton-state'
   | 'sync-external-call'
   | 'unsafe-shared-resource'
+  // Async patterns
+  | 'async-without-enable'
+  | 'async-private-method'
+  | 'async-self-invocation'
+  | 'async-void-no-error-handling'
+  | 'async-wrong-return-type'
+  | 'missing-async-thread-pool'
+  | 'async-transactional-conflict'
+  // Async advanced patterns
+  | 'future-get-without-timeout'
+  | 'future-missing-error-handling'
+  | 'scheduled-no-error-handling'
+  | 'scheduled-single-thread'
+  | 'event-listener-blocking'
+  | 'threadlocal-no-cleanup'
+  | 'blocking-in-reactive'
+  | 'unsafe-lazy-init'
   // Resilience patterns
   | 'missing-circuit-breaker'
   | 'missing-timeout'
@@ -87,7 +104,12 @@ export type OpportunityType =
   | 'missing-db-migration'
   | 'missing-cors-config'
   | 'missing-rate-limiting'
-  | 'missing-graceful-shutdown';
+  | 'missing-graceful-shutdown'
+  // Code quality patterns
+  | 'field-injection'
+  | 'sysout-usage'
+  | 'long-method'
+  | 'value-overuse';
 
 export interface CodeOpportunity {
   type: OpportunityType;

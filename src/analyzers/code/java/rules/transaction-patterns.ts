@@ -1,6 +1,7 @@
 import type { CodeOpportunity } from '../../../../types/analysis.js';
 import type { JavaProjectContext } from '../../base-analyzer.js';
 import type { SpringConventions } from '../../../../config/conventions.js';
+import { getLineNumber } from '../../../../utils/line-number.js';
 
 export function analyzeTransactionPatterns(
   filePath: string,
@@ -34,6 +35,7 @@ function detectMissingTransactional(
   if (!methods) return;
 
   let missingCount = 0;
+  let firstLine: number | undefined;
 
   for (const method of methods) {
     const methodStart = content.indexOf(method);
@@ -56,6 +58,9 @@ function detectMissingTransactional(
 
     if (!hasTransactional && !classLevelTransactional) {
       missingCount++;
+      if (firstLine === undefined) {
+        firstLine = getLineNumber(content, methodStart);
+      }
     }
   }
 
@@ -64,6 +69,7 @@ function detectMissingTransactional(
       type: 'missing-transactional',
       severity: 'high',
       file: filePath,
+      line: firstLine,
       current: `DB 쓰기 작업이 있는 Service 메서드 ${missingCount}개에 @Transactional이 없습니다`,
       suggestion: '데이터 정합성을 위해 @Transactional을 추가하세요. 여러 DB 작업이 하나의 트랜잭션으로 묶여야 합니다',
       portfolioValue: 8,
